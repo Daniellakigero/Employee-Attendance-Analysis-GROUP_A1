@@ -1,166 +1,108 @@
 # Employee-Attendance-Analysis-GROUP_A1
 
-## Employee Management System
+# Employee Attendance Analysis Procedure
 
-## Overview
+## Description
+This PL/SQL procedure calculates and displays attendance statistics for employees based on data from two tables, `employees` and `attendance`. It calculates the total number of days an employee was present or absent in a specified month and computes the attendance percentage.
 
-This project is an Employee Management System that allows you to manage employee records in a company database. The system is built using PL/SQL and includes:
+## Database Schema
+- **Employees Table**
+  - `employee_id` (NUMBER, PRIMARY KEY)
+  - `first_name` (VARCHAR2)
+  - `last_name` (VARCHAR2)
+  
+- **Attendance Table**
+  - `attendance_id` (NUMBER, PRIMARY KEY)
+  - `employee_id` (NUMBER, FOREIGN KEY REFERENCES `employees(employee_id)`)
+  - `attendance_date` (DATE)
+  - `status` (VARCHAR2) - Values: 'Present' or 'Absent'
 
-# A function to retrieve an employee’s salary based on their ID.
-# A procedure to update an employee's salary by a given percentage increase.
+## Procedure Parameters
+- **p_month**: The month for which attendance should be analyzed.
+- **p_year**: The year for which attendance should be analyzed.
 
-# Requirements
+## Outputs
+For each employee, the procedure outputs:
+- Full name (first and last name).
+- Total presents.
+- Total absents.
+- Attendance percentage for the specified month.
 
-## Function
-- Name: get_employee_salary
-- Parameters: employee_id (number)
-- Returns: The employee’s salary.
+## Exception Handling
+- **NO_DATA_FOUND**: If no attendance records exist for the specified month, an informative message is displayed.
+- **OTHERS**: Catches all other errors and displays a generic error message.
+## PL/SQL Code with Comments
 
-## Procedure
-- Name: update_employee_salary
-- Parameters:
-- employee_id (number)
-- percentage_increase (number)
-- Functionality: Updates the employee’s salary by the given percentage. If the - employee does not exist, it raises an exception.
+                    -- PL/SQL Procedure to calculate and display employee attendance statistics
 
-# Implementation
+                    CREATE OR REPLACE PROCEDURE calculate_employee_attendance (
+                        p_month IN NUMBER,
+                        p_year IN NUMBER
+                    ) AS
+                        -- Variable declarations
+                        v_employee_id EMPLOYEES.employee_id%TYPE;
+                        v_first_name EMPLOYEES.first_name%TYPE;
+                        v_last_name EMPLOYEES.last_name%TYPE;
+                        v_total_presents NUMBER := 0;
+                        v_total_absents NUMBER := 0;
+                        v_attendance_percentage NUMBER;
+                        v_days_in_month NUMBER;
+                        
+                        -- Cursor to fetch all employees
+                        CURSOR emp_cursor IS
+                            SELECT employee_id, first_name, last_name
+                            FROM employees;
 
-## Step 1: Create the Employees Table
-### The employees table stores the details of each employee, including their ID, first name, last name, and salary.
+                    BEGIN
+                        -- Calculate the number of days in the specified month
+                        SELECT TO_NUMBER(TO_CHAR(LAST_DAY(TO_DATE(p_month || '-' || p_year, 'MM-YYYY')), 'DD'))
+                        INTO v_days_in_month
+                        FROM dual;
 
-              -- Creating a table named employees with columns for ID, first name, last name, and salary
-                CREATE TABLE employees (
-                    employee_id NUMBER PRIMARY KEY, -- Unique identifier for each employee
-                    first_name VARCHAR2(50),        -- Stores the employee's first name
-                    last_name VARCHAR2(50),         -- Stores the employee's last name
-                    salary NUMBER(10, 2)            -- Stores the employee's salary with 2 decimal precision
-                );
+                        -- Loop through each employee
+                        FOR emp_rec IN emp_cursor LOOP
+                            v_total_presents := 0;
+                            v_total_absents := 0;
 
-## Step 2: Create the get_employee_salary Function
-### This function retrieves the salary of an employee based on their employee ID. If the employee ID does not exist, it returns NULL.
+                            -- Fetch attendance records for the employee in the specified month
+                            FOR attendance_rec IN (
+                                SELECT status
+                                FROM attendance
+                                WHERE employee_id = emp_rec.employee_id
+                                AND TO_CHAR(attendance_date, 'MM') = TO_CHAR(p_month, 'FM00')
+                                AND TO_CHAR(attendance_date, 'YYYY') = TO_CHAR(p_year)
+                            ) LOOP
+                                -- Count presents and absents
+                                IF attendance_rec.status = 'Present' THEN
+                                    v_total_presents := v_total_presents + 1;
+                                ELSIF attendance_rec.status = 'Absent' THEN
+                                    v_total_absents := v_total_absents + 1;
+                                END IF;
+                            END LOOP;
 
-             -- Function to retrieve an employee's salary based on their employee ID
-                CREATE OR REPLACE FUNCTION get_employee_salary (p_employee_id NUMBER) -- Input parameter for employee ID
-                RETURN NUMBER -- Specifies that the function returns a NUMBER
-                IS
-                    v_salary NUMBER; -- Variable to store the retrieved salary
-                BEGIN
-                    -- Query to select the employee's salary
-                    SELECT salary INTO v_salary
-                    FROM employees
-                    WHERE employee_id = p_employee_id;
-                    
-                    RETURN v_salary; -- Return the retrieved salary
-                EXCEPTION
-                    WHEN NO_DATA_FOUND THEN -- Exception handling for non-existent employee ID
-                        RETURN NULL; -- Returns NULL if employee ID is not found
-                END;
-                /
+                            -- Calculate attendance percentage
+                            v_attendance_percentage := (v_total_presents / v_days_in_month) * 100;
 
-## Step 3: Create the update_employee_salary Procedure
-### This procedure updates an employee's salary by a specified percentage increase. If the employee ID does not exist, it raises a custom error.  
+                            -- Display result
+                            DBMS_OUTPUT.PUT_LINE('Employee: ' || emp_rec.first_name || ' ' || emp_rec.last_name);
+                            DBMS_OUTPUT.PUT_LINE('Total Presents: ' || v_total_presents);
+                            DBMS_OUTPUT.PUT_LINE('Total Absents: ' || v_total_absents);
+                            DBMS_OUTPUT.PUT_LINE('Attendance Percentage: ' || v_attendance_percentage || '%');
+                            DBMS_OUTPUT.PUT_LINE('-------------------------');
+                        END LOOP;
 
-                -- Procedure to update an employee's salary by a given percentage
-                CREATE OR REPLACE PROCEDURE update_employee_salary (
-                    p_employee_id NUMBER, -- Input parameter for employee ID
-                    p_percentage_increase NUMBER -- Input parameter for percentage increase
-                )
-                IS
-                    v_salary NUMBER; -- Variable to store the current salary of the employee
-                BEGIN
-                    -- Query to retrieve the current salary of the employee
-                    SELECT salary INTO v_salary
-                    FROM employees
-                    WHERE employee_id = p_employee_id;
-                    
-                    -- Calculate the new salary by applying the percentage increase
-                    v_salary := v_salary * (1 + p_percentage_increase / 100);
-                    
-                    -- Update the salary in the employees table with the calculated new salary
-                    UPDATE employees
-                    SET salary = v_salary
-                    WHERE employee_id = p_employee_id;
-                    
-                    COMMIT; -- Save the changes
-                EXCEPTION
-                    WHEN NO_DATA_FOUND THEN -- Exception handling for non-existent employee ID
-                        -- Raise a custom error if the employee ID is not found
-                        RAISE_APPLICATION_ERROR(-20001, 'Employee does not exist');
-                END;
-                /
+                    EXCEPTION
+                        WHEN NO_DATA_FOUND THEN
+                            DBMS_OUTPUT.PUT_LINE('No attendance records found for the specified month.');
+                        WHEN OTHERS THEN
+                            DBMS_OUTPUT.PUT_LINE('An error occurred: ' || SQLERRM);
+                    END calculate_employee_attendance;
+                    /
 
-
-## Step 4: Testing the Function and Procedure
-### To verify the functionality of the function and procedure, we insert sample data into the employees table and perform tests.
-
-# Insert Sample Data
-## Adding two sample employees to test the function and procedure.
-
-            -- Insert sample employee data
-            INSERT INTO employees (employee_id, first_name, last_name, salary) 
-            VALUES (1, 'John', 'Doe', 50000); -- Employee with ID 1
-
-            INSERT INTO employees (employee_id, first_name, last_name, salary) 
-            VALUES (2, 'Jane', 'Smith', 60000); -- Employee with ID 2
-
-            COMMIT; -- Save the inserted data
-
-## Test the get_employee_salary Function
-### This test retrieves and displays the salary of an employee with ID 1.
-
-                -- Testing the get_employee_salary function
-                DECLARE
-                    v_salary NUMBER; -- Variable to store the function output
-                BEGIN
-                    -- Retrieve salary for employee ID 1
-                    v_salary := get_employee_salary(1);
-                    
-                    -- Output the result
-                    DBMS_OUTPUT.PUT_LINE('Salary of employee 1: ' || v_salary);
-                END;
-                /
-
-## Test the update_employee_salary Procedure
-### This test updates the salary of an employee with ID 1 by a 10% increase and then retrieves the updated salary.
-
-                -- Testing the update_employee_salary procedure
-                BEGIN
-                    -- Update salary by 10% for employee ID 1
-                    update_employee_salary(1, 10);
-                    
-                    -- Display the updated salary
-                    DBMS_OUTPUT.PUT_LINE('Updated salary of employee 1: ' || get_employee_salary(1));
-                END;
-                /
-
-# Explanation of Code Structure
-## Table Creation: Sets up the employees table to store employee data.
-## Function (get_employee_salary): Fetches an employee's salary based on their ID. If the ID does not exist, it returns NULL.
-## Procedure (update_employee_salary): Updates the salary by a given percentage increase. If the employee ID is invalid, it raises an error.
-## Testing: Adds sample data to the table and verifies that the function and procedure work as expected.
-
-
-# Requirements for Running
-### Oracle SQL Developer or another Oracle database client.
-### Access to Oracle Database for executing PL/SQL.
-# Notes
-## Remember to enable DBMS_OUTPUT in your SQL client to view the output of DBMS_OUTPUT.PUT_LINE.
-
-
-
-
-
-
-
-
-# GROUP NAME : A1
-## MEMBERS : 
-           1.  KIGERO KANYANA DANIELLA : 24652
-           2.  ISIMBI  SYLVIA : 25342
-           3. IRIZA GATERA MERVEILLE : 26266
-           4. ANGE KIMBERLY MUKESHIMANA : 25580
-           5.  ANGE MIREILLE IGIHOZO NZARAMBA : 25487
-           6. GISUBIZO GISELE : 26188
-           7.HARERIMANA GASPARD : 24960
-           8. UMUTONI GAELLA : 25524
-           9. IRAKARAMA BERGERAC : 24873
+## Usage
+To execute the procedure:
+```sql
+BEGIN
+    calculate_employee_attendance(10, 2024); -- Example for October 2024
+END;
+/
