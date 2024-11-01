@@ -32,14 +32,14 @@ For each employee, the procedure outputs:
 - **NO_DATA_FOUND**: If no attendance records exist for the specified month, an informative message is displayed.
 - **OTHERS**: Catches all other errors and displays a generic error message.
 ## SQL Statements for Table Creation
-                                        -- Creating the Employees table
+                       -- Creating the Employees table
                                 CREATE TABLE employees (
                                     employee_id NUMBER PRIMARY KEY,            -- Unique identifier for each employee
                                     first_name VARCHAR2(50),                   -- Employee's first name
                                     last_name VARCHAR2(50)                     -- Employee's last name
                                 );
                                 
-                                -- Creating the Attendance table
+                       -- Creating the Attendance table
                                 CREATE TABLE attendance (
                                     attendance_id NUMBER PRIMARY KEY,            -- Unique identifier for each attendance record
                                     employee_id NUMBER,                          -- Foreign key referencing employee_id in employees table
@@ -49,13 +49,13 @@ For each employee, the procedure outputs:
                                         REFERENCES employees(employee_id)        -- Enforces relationship to employees table
                                 );
                                 
-                                -- Adding a check constraint to enforce values 'Present' or 'Absent' in the status column
+                      -- Adding a check constraint to enforce values 'Present' or 'Absent' in the status column
                                 ALTER TABLE attendance
                                 ADD CONSTRAINT chk_status CHECK (status IN ('Present', 'Absent'));
 
 ## PL/SQL Code with Comments
 
-                                  -- PL/SQL Procedure to calculate and display employee attendance statistics
+                      -- PL/SQL Procedure to calculate and display employee attendance statistics
                                 
                                 CREATE OR REPLACE PROCEDURE calculate_employee_attendance (
                                     p_month IN NUMBER,     -- Input parameter: the month for attendance calculation (e.g., 10 for October)
