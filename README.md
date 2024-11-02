@@ -131,6 +131,13 @@ BEGIN
     calculate_employee_attendance(10, 2024); -- Example for October 2024
 END;
 /
+## Testing the procedure 
+          -- Anonymous PL/SQL block to test the calculate_employee_attendance procedure
+          BEGIN
+              -- Call the procedure with a specific month and year (e.g., October 2024)
+              calculate_employee_attendance(10, 2024);
+          END;
+          /
 
 
 DONE BY GROUP A1
