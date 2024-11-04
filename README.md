@@ -3,7 +3,7 @@
 ### Employee Attendance Analysis Procedure
 
 ## Description
-This PL/SQL procedure calculates and displays attendance statistics for employees based on data from two tables, `employees` and `attendance`. It calculates the total number of days an employee was present or absent in a specified month and computes the attendance percentage.
+This PL/SQL procedure calculates and displays attendance statistics for employees based on the data from two tables, `employees` and `attendance`. It calculates the total number of days an employee was present or absent in a specified month and computes the attendance percentage.
 
 ## Database Schema
 - **Employees Table**
